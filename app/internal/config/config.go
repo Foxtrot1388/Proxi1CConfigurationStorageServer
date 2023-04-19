@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
 )
@@ -17,10 +18,11 @@ var (
 )
 
 func Get(configname *string) *Config {
-	yamlFile, err := ioutil.ReadFile("./" + *configname)
+	yamlFile, err := ioutil.ReadFile(*configname)
 	if err != nil {
 		panic(err)
 	}
 	err = yaml.Unmarshal(yamlFile, &config)
+	fmt.Println("Use " + *configname)
 	return &config
 }

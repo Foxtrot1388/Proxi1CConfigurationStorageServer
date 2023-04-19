@@ -1,7 +1,7 @@
 package main
 
 import (
-	"Proxi1CConfigurationStorageServer/config"
+	"Proxi1CConfigurationStorageServer/app/internal/config"
 	"flag"
 	"log"
 	"net"
