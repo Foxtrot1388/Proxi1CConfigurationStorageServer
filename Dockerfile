@@ -1,9 +1,11 @@
 FROM golang:1.14.0-alpine3.11 AS builder
 
 WORKDIR /usr/local/go/src/
-ADD . .
-
+ADD go.mod .
+ADD go.sum .
 RUN go mod download
+
+ADD . .
 RUN go build -v -mod=readonly -o app.exe app/main.go
 
 #lightweight docker container with binary
