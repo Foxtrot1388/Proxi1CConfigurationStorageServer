@@ -1,14 +1,17 @@
 package main
 
 import (
-	"Proxi1CConfigurationStorageServer/app/internal/config"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"runtime"
+
+	"Proxi1CConfigurationStorageServer/internal/config"
+	event "Proxi1CConfigurationStorageServer/internal/event"
+	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
 )
-import "fmt"
 
 var configname *string = flag.String("configname", "app.yaml", "target config")
 
@@ -30,6 +33,16 @@ func main() {
 		panic(err)
 	}
 
+	pool := make(chan int, cfg.NumAnalizeWorkers)
+	defer close(pool)
+	for i := 0; i < cfg.NumAnalizeWorkers; i++ {
+		pool <- i
+	}
+
+	eventchan := make(chan interface{}, 20)
+	defer close(eventchan)
+	go event.EventListener(eventchan)
+
 	for {
 		if conin, err := portlistener.Accept(); err == nil {
 
@@ -39,8 +52,8 @@ func main() {
 					panic(err)
 				}
 				done := make(chan struct{})
-				go readwritetotcp(conin, conout, done, infologhost)
-				go readwritetotcp(conout, conin, done, infologlocal)
+				go readwritetotcp(conin, conout, done, infologhost, pool, eventchan)
+				go readwritetotcp(conout, conin, done, infologlocal, nil, nil)
 				<-done
 				<-done
 			}()
@@ -52,19 +65,39 @@ func main() {
 
 }
 
-func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger) {
+func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, poolworkers chan int, eventchan chan<- interface{}) {
+
 	readbyte := make([]byte, 10240)
 	for {
+
 		n, err := conin.Read(readbyte)
 		if err != nil {
 			break
 		}
+
 		if n > 0 {
+
 			if logdebug != nil {
 				logdebug.Println(string(readbyte[:n]))
 			}
+
 			connout.Write(readbyte[:n])
+
+			if poolworkers != nil && eventchan != nil {
+				select {
+				case id := <-poolworkers:
+					go func(req string, tokenid int) {
+						tcpxml.Analyze(req, eventchan)
+						poolworkers <- tokenid
+					}(string(readbyte[:n]), id)
+				default:
+					break
+				}
+
+			}
+
 		}
 	}
+
 	done <- struct{}{}
 }

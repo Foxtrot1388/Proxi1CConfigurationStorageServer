@@ -6,7 +6,7 @@ ADD go.sum .
 RUN go mod download
 
 ADD . .
-RUN go build -v -mod=readonly -o app.exe app/main.go
+RUN go build -v -mod=readonly -o app.exe main.go
 
 #lightweight docker container with binary
 FROM alpine:latest
@@ -15,6 +15,7 @@ RUN apk --no-cache add ca-certificates
 
 COPY --from=builder /usr/local/go/src/app.exe /
 COPY --from=builder /usr/local/go/src/app.yaml /
+COPY --from=builder /usr/local/go/src/*.os /
 
 EXPOSE 8081
 

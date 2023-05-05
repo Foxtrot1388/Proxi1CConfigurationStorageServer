@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<crs:call xmlns:crs="http://v8.1c.ru/8.2/crs" alias="main" name="DevDepot_commitObjects" version="8.3.19.1331">
+    <crs:auth user="User.Test"/>
+    <crs:params>
+        <crs:data>помещение</crs:data>
+        <crs:changes>
+            <crs:value>
+                <crs:second>
+                    <crs:_super>
+                        <crs:name value="Object1"/>
+                    </crs:_super>
+                </crs:second>
+            </crs:value>
+            <crs:value>
+                <crs:second>
+                    <crs:_super>
+                        <crs:name value="Object2"/>
+                    </crs:_super>
+                </crs:second>
+            </crs:value>
+            <crs:value>
+                <crs:second>
+                    <crs:_super>
+                        <crs:name value="Object3"/>
+                    </crs:_super>
+                </crs:second>
+            </crs:value>
+        </crs:changes>
+        <crs:objectsToRemove/>
+        <crs:code value="1.0.0.0"/>
+        <crs:comment>Comment for commit</crs:comment>
+        <crs:features/>
+    </crs:params>
+</crs:call>

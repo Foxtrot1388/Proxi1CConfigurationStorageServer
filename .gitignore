@@ -19,5 +19,6 @@ dev.yaml
 go.work
 tmp/
 .idea/
+.vscode/
 .idea/workspace.xml
 **/.idea/workspace.xml

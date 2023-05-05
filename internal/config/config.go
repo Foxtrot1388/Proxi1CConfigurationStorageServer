@@ -2,15 +2,17 @@ package config
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	Host       string `yaml:"host"`
-	Port       string `yaml:"port"`
-	ListenPort string `yaml:"listenport"`
-	Debug      bool   `yaml:"debug"`
+	Host              string `yaml:"host"`
+	Port              string `yaml:"port"`
+	ListenPort        string `yaml:"listenport"`
+	Debug             bool   `yaml:"debug"`
+	NumAnalizeWorkers int    `yaml:"numanalizeworkers`
 }
 
 var (
