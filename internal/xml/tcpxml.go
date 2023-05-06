@@ -1,8 +1,10 @@
 package tcpxml
 
 import (
-	"bytes"
 	"encoding/xml"
+	"strings"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
 type CommitObject struct {
@@ -28,8 +30,19 @@ type CommitObject struct {
 
 func Analyze(xmlreqest string, eventchan chan<- interface{}) {
 
-	xmlData := bytes.NewBufferString(xmlreqest)
-	d := xml.NewDecoder(xmlData)
+	firstindex := strings.Index(xmlreqest, "<?xml")
+	if firstindex == -1 {
+		return
+	}
+
+	lastindex := strings.LastIndex(xmlreqest, ">")
+	if lastindex == -1 {
+		return
+	}
+
+	decoder := charmap.Windows1251.NewDecoder()
+	reader := decoder.Reader(strings.NewReader(xmlreqest[firstindex:lastindex]))
+	d := xml.NewDecoder(reader)
 
 	_, err := d.Token()
 	if err != nil {

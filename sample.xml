@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+56676<?xml version="1.0" encoding="UTF-8"?>
 <crs:call xmlns:crs="http://v8.1c.ru/8.2/crs" alias="main" name="DevDepot_commitObjects" version="8.3.19.1331">
     <crs:auth user="User.Test"/>
     <crs:params>
@@ -31,4 +31,4 @@
         <crs:comment>Comment for commit</crs:comment>
         <crs:features/>
     </crs:params>
-</crs:call>
+</crs:call>123
