@@ -1,16 +1,15 @@
 package main
 
 import (
+	"Proxi1CConfigurationStorageServer/internal/config"
+	"Proxi1CConfigurationStorageServer/internal/event"
+	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"runtime"
-
-	"Proxi1CConfigurationStorageServer/internal/config"
-	event "Proxi1CConfigurationStorageServer/internal/event"
-	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
 )
 
 var configname *string = flag.String("configname", "app.yaml", "target config")
@@ -33,15 +32,8 @@ func main() {
 		panic(err)
 	}
 
-	pool := make(chan int, cfg.NumAnalizeWorkers)
-	defer close(pool)
-	for i := 0; i < cfg.NumAnalizeWorkers; i++ {
-		pool <- i
-	}
-
-	eventchan := make(chan interface{}, 20)
-	defer close(eventchan)
-	go event.EventListener(eventchan)
+	workcfg := tcpxml.GetConfiguration(cfg, event.EventListener)
+	defer workcfg.Close()
 
 	for {
 		if conin, err := portlistener.Accept(); err == nil {
@@ -52,8 +44,8 @@ func main() {
 					panic(err)
 				}
 				done := make(chan struct{})
-				go readwritetotcp(conin, conout, done, infologhost, pool, eventchan)
-				go readwritetotcp(conout, conin, done, infologlocal, nil, nil)
+				go readwritetotcp(conin, conout, done, infologhost, workcfg)
+				go readwritetotcp(conout, conin, done, infologlocal, nil)
 				<-done
 				<-done
 			}()
@@ -65,7 +57,7 @@ func main() {
 
 }
 
-func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, poolworkers chan int, eventchan chan<- interface{}) {
+func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, workcfg *tcpxml.WorkersConfiguration) {
 
 	readbyte := make([]byte, 10240)
 	for {
@@ -83,17 +75,8 @@ func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logd
 
 			connout.Write(readbyte[:n])
 
-			if poolworkers != nil && eventchan != nil {
-				select {
-				case id := <-poolworkers:
-					go func(req string, tokenid int) {
-						tcpxml.Analyze(req, eventchan)
-						poolworkers <- tokenid
-					}(string(readbyte[:n]), id)
-				default:
-					break
-				}
-
+			if workcfg != nil {
+				workcfg.FreeLockPoolAnalize(string(readbyte[:n]))
 			}
 
 		}
