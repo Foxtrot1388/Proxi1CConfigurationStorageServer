@@ -1,11 +1,14 @@
 package main
 
 import (
+	"Proxi1CConfigurationStorageServer/internal/config"
 	"Proxi1CConfigurationStorageServer/internal/entity"
-	"Proxi1CConfigurationStorageServer/internal/event"
 	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
+	"context"
 	"io/ioutil"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestSampleXML(t *testing.T) {
@@ -15,10 +18,25 @@ func TestSampleXML(t *testing.T) {
 		panic(err)
 	}
 
-	eventchan := make(chan entity.OneCEvents, 20)
-	tcpxml.Analyze(string(xmlFile), eventchan)
-	val := <-eventchan
-	event.DoEvent([]entity.OneCEvents{0: val})
-	close(eventchan)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(10)*time.Second)
+	wg := sync.WaitGroup{}
+
+	f := func(ch chan entity.OneCEvents) {
+		defer wg.Done()
+		select {
+		case val := <-ch:
+			if js, err := val.GetJSON(); err != nil || js != "{\"comment\":\"Comment for commit\",\"configuration\":\"main\",\"objects\":[\"Object1\",\"Object2\",\"Object3\"],\"user\":\"User.Test\"}" {
+				t.Fail()
+			}
+		case <-ctx.Done():
+			t.Fail()
+		}
+	}
+
+	wg.Add(1)
+	workers := tcpxml.GetConfiguration(&config.Config{NumAnalizeWorkers: 1}, f)
+	defer workers.Close()
+	workers.FreeLockPoolAnalize(string(xmlFile))
+	wg.Wait()
 
 }

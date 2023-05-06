@@ -10,22 +10,22 @@ import (
 )
 
 type WorkersConfiguration struct {
-	Pool      chan int
-	Eventchan chan entity.OneCEvents
+	pool      chan int
+	eventchan chan entity.OneCEvents
 }
 
 func GetConfiguration(cfg *config.Config, f func(chan entity.OneCEvents)) *WorkersConfiguration {
 
 	workcfg := WorkersConfiguration{
-		Eventchan: make(chan entity.OneCEvents, 20), // to cfg?
-		Pool:      make(chan int, cfg.NumAnalizeWorkers),
+		eventchan: make(chan entity.OneCEvents, 20), // to cfg?
+		pool:      make(chan int, cfg.NumAnalizeWorkers),
 	}
 
 	for i := 0; i < cfg.NumAnalizeWorkers; i++ {
-		workcfg.Pool <- i
+		workcfg.pool <- i
 	}
 
-	go f(workcfg.Eventchan)
+	go f(workcfg.eventchan)
 
 	return &workcfg
 
@@ -33,10 +33,10 @@ func GetConfiguration(cfg *config.Config, f func(chan entity.OneCEvents)) *Worke
 
 func (w *WorkersConfiguration) FreeLockPoolAnalize(str string) {
 	select {
-	case id := <-w.Pool:
+	case id := <-w.pool:
 		go func(tokenid int) {
-			Analyze(str, w.Eventchan)
-			w.Pool <- tokenid
+			w.analyze(str)
+			w.pool <- tokenid
 		}(id)
 	default:
 		return
@@ -44,11 +44,11 @@ func (w *WorkersConfiguration) FreeLockPoolAnalize(str string) {
 }
 
 func (w *WorkersConfiguration) Close() {
-	close(w.Eventchan)
-	close(w.Pool)
+	close(w.eventchan)
+	close(w.pool)
 }
 
-func Analyze(xmlreqest string, eventchan chan<- entity.OneCEvents) {
+func (w *WorkersConfiguration) analyze(xmlreqest string) {
 
 	firstindex := strings.Index(xmlreqest, "<?xml")
 	if firstindex == -1 {
@@ -85,7 +85,7 @@ func Analyze(xmlreqest string, eventchan chan<- entity.OneCEvents) {
 			var result entity.CommitObject
 			d.DecodeElement(&result, &se)
 			result.Conf = se.Attr[1].Value
-			eventchan <- result
+			w.eventchan <- result
 		}
 	default:
 		return
