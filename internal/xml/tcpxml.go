@@ -13,6 +13,7 @@ import (
 type WorkersConfiguration struct {
 	pool      chan int
 	eventchan chan entity.OneCEvents
+	cancelctx context.CancelFunc
 }
 
 func GetConfiguration(ctx context.Context, cfg *config.Config, f func(context.Context, *config.Config, <-chan entity.OneCEvents)) *WorkersConfiguration {
@@ -26,7 +27,9 @@ func GetConfiguration(ctx context.Context, cfg *config.Config, f func(context.Co
 		workcfg.pool <- i
 	}
 
-	go f(ctx, cfg, workcfg.eventchan)
+	newctx, cancel := context.WithCancel(ctx)
+	workcfg.cancelctx = cancel
+	go f(newctx, cfg, workcfg.eventchan)
 
 	return &workcfg
 
@@ -45,8 +48,9 @@ func (w *WorkersConfiguration) FreeLockPoolAnalize(str string) {
 }
 
 func (w *WorkersConfiguration) Close() {
-	close(w.eventchan)
 	close(w.pool)
+	w.cancelctx()
+	close(w.eventchan)
 }
 
 func (w *WorkersConfiguration) analyze(xmlreqest string) {
@@ -82,10 +86,10 @@ func (w *WorkersConfiguration) analyze(xmlreqest string) {
 
 	switch se := t.(type) {
 	case xml.StartElement:
-		if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[2].Value == "DevDepot_commitObjects" {
+		if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[entity.AttrCommitObjectEvent].Value == "DevDepot_commitObjects" {
 			var result entity.CommitObject
 			d.DecodeElement(&result, &se)
-			result.Conf = se.Attr[1].Value
+			result.Conf = se.Attr[entity.AttrCommitObjectConfiguration].Value
 			w.eventchan <- result
 		}
 	default:

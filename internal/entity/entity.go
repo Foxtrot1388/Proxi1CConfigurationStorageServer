@@ -4,6 +4,9 @@ type OneCEvents interface {
 	GetCompactEvent() interface{}
 }
 
+const AttrCommitObjectEvent = 2
+const AttrCommitObjectConfiguration = 1
+
 type CommitObject struct {
 	Conf string
 	Auth struct {
