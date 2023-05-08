@@ -17,6 +17,7 @@
 # Go workspace file
 dev.yaml
 go.work
+scriptcfg.json
 tmp/
 .idea/
 .vscode/

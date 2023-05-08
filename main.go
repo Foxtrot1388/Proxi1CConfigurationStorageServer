@@ -4,6 +4,7 @@ import (
 	"Proxi1CConfigurationStorageServer/internal/config"
 	"Proxi1CConfigurationStorageServer/internal/event"
 	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -32,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	workcfg := tcpxml.GetConfiguration(cfg, event.EventListener)
+	workcfg := tcpxml.GetConfiguration(context.Background(), cfg, event.EventListener)
 	defer workcfg.Close()
 
 	for {

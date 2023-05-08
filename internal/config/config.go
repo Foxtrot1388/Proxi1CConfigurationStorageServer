@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	Host              string `yaml:"host"`
-	Port              string `yaml:"port"`
-	ListenPort        string `yaml:"listenport"`
-	Debug             bool   `yaml:"debug"`
-	NumAnalizeWorkers int    `yaml:"numanalizeworkers`
+	Host              string            `yaml:"host"`
+	Port              string            `yaml:"port"`
+	ListenPort        string            `yaml:"listenport"`
+	Debug             bool              `yaml:"debug"`
+	NumAnalizeWorkers int               `yaml:"numanalizeworkers`
+	Scriptfile        map[string]string `yaml:"scriptfile"`
 }
 
 var (

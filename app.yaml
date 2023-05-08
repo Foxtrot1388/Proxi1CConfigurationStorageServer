@@ -3,3 +3,5 @@ port: "1542"
 listenport: "8081"
 debug: false
 numanalizeworkers: 3
+scriptfile:
+  DevDepot_commitObjects: "CommitObject.os"

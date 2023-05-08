@@ -3,6 +3,7 @@ package tcpxml
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
 	"Proxi1CConfigurationStorageServer/internal/entity"
+	"context"
 	"encoding/xml"
 	"strings"
 
@@ -14,7 +15,7 @@ type WorkersConfiguration struct {
 	eventchan chan entity.OneCEvents
 }
 
-func GetConfiguration(cfg *config.Config, f func(chan entity.OneCEvents)) *WorkersConfiguration {
+func GetConfiguration(ctx context.Context, cfg *config.Config, f func(context.Context, *config.Config, <-chan entity.OneCEvents)) *WorkersConfiguration {
 
 	workcfg := WorkersConfiguration{
 		eventchan: make(chan entity.OneCEvents, 20), // to cfg?
@@ -25,7 +26,7 @@ func GetConfiguration(cfg *config.Config, f func(chan entity.OneCEvents)) *Worke
 		workcfg.pool <- i
 	}
 
-	go f(workcfg.eventchan)
+	go f(ctx, cfg, workcfg.eventchan)
 
 	return &workcfg
 

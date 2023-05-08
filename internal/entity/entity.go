@@ -1,9 +1,7 @@
 package entity
 
-import "encoding/json"
-
 type OneCEvents interface {
-	GetJSON() (string, error)
+	GetCompactEvent() interface{}
 }
 
 type CommitObject struct {
@@ -27,7 +25,7 @@ type CommitObject struct {
 	} `xml:"params"`
 }
 
-func (com CommitObject) GetJSON() (string, error) {
+func (com CommitObject) GetCompactEvent() interface{} {
 	dat := make(map[string]interface{})
 	objects := make([]string, len(com.Params.Changes.Value))
 	dat["user"] = com.Auth.User
@@ -37,6 +35,5 @@ func (com CommitObject) GetJSON() (string, error) {
 		objects[i] = com.Params.Changes.Value[i].Second.Super.Name.Value
 	}
 	dat["objects"] = objects
-	str, err := json.Marshal(dat)
-	return string(str), err
+	return dat
 }
