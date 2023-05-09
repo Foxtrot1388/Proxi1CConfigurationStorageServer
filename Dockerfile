@@ -16,6 +16,7 @@ RUN apk --no-cache add ca-certificates
 COPY --from=builder /usr/local/go/src/app.exe /
 COPY --from=builder /usr/local/go/src/app.yaml /
 COPY --from=builder /usr/local/go/src/*.os /
+COPY --from=builder /usr/local/go/src/scriptcfg.json /
 
 EXPOSE 8081
 

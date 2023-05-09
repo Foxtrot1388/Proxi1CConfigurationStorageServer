@@ -1,5 +1,10 @@
 package entity
 
+import (
+	"Proxi1CConfigurationStorageServer/internal/config"
+	"context"
+)
+
 type OneCEvents interface {
 	GetCompactEvent() interface{}
 }
@@ -9,7 +14,27 @@ const (
 	AttrCommitObjectConfiguration = 1
 )
 
+type AnalyzeWork interface {
+	Analyze(string)
+	Close()
+}
+
+type WorkConfiguration struct {
+	AnalyzeWork
+	Eventchan chan OneCEvents
+}
+
+type EventListener interface {
+	Listen(context.Context, *config.Config)
+}
+
+type EventListen struct {
+	EventListener
+	Configuration *WorkConfiguration
+}
+
 type CommitObject struct {
+	OneCEvents
 	Conf string
 	Auth struct {
 		User string `xml:"user,attr"`

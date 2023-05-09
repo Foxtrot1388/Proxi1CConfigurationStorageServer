@@ -1,4 +1,4 @@
-package event
+package listenereventchan
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
@@ -11,23 +11,24 @@ import (
 
 type aggevents []entity.OneCEvents
 
-type EventWorker struct {
+type OScriptListener struct {
+	entity.EventListen
 }
 
-func (e *EventWorker) EventListener(ctx context.Context, cfg *config.Config, ch <-chan entity.OneCEvents) {
+func (e *OScriptListener) Listen(ctx context.Context, cfg *config.Config) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			rawevent := e.readNextPart(ch)
+			rawevent := e.readNextPart(e.Configuration.Eventchan)
 			e.doEvent(cfg, rawevent)
 			time.Sleep(time.Duration(5 * time.Minute))
 		}
 	}
 }
 
-func (e *EventWorker) readNextPart(ch <-chan entity.OneCEvents) []entity.OneCEvents {
+func (e *OScriptListener) readNextPart(ch <-chan entity.OneCEvents) []entity.OneCEvents {
 	var rawevent []entity.OneCEvents
 	for {
 		select {
@@ -42,7 +43,7 @@ func (e *EventWorker) readNextPart(ch <-chan entity.OneCEvents) []entity.OneCEve
 	}
 }
 
-func (e *EventWorker) doEvent(cfg *config.Config, val []entity.OneCEvents) {
+func (e *OScriptListener) doEvent(cfg *config.Config, val []entity.OneCEvents) {
 
 	aggevent := make(map[string]aggevents, len(cfg.Scriptfile))
 	for i := 0; i < len(val); i++ {

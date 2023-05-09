@@ -3,7 +3,7 @@ package main
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
 	"Proxi1CConfigurationStorageServer/internal/entity"
-	"Proxi1CConfigurationStorageServer/internal/event"
+	"Proxi1CConfigurationStorageServer/internal/listenereventchan"
 	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
 	"context"
 	"flag"
@@ -16,21 +16,17 @@ import (
 
 var configname *string = flag.String("configname", "app.yaml", "target config")
 
-type analyzeWork interface {
-	Analyze(string)
-	Close()
-}
-
-type eventListener interface {
-	EventListener(context.Context, *config.Config, <-chan entity.OneCEvents)
-}
-
-func GetConfiguration(ctx context.Context, cfg *config.Config, e eventListener) (analyzeWork, func()) {
+func GetConfiguration(ctx context.Context, cfg *config.Config) (entity.AnalyzeWork, func()) {
 
 	workcfg := tcpxml.GetPoolWorkers(cfg)
 
 	newctx, cancelctx := context.WithCancel(ctx)
-	go e.EventListener(newctx, cfg, workcfg.Eventchan)
+	eventlistener := listenereventchan.OScriptListener{
+		entity.EventListen{
+			Configuration: &workcfg.WorkConfiguration,
+		},
+	}
+	go eventlistener.Listen(newctx, cfg)
 
 	return workcfg, func() {
 		workcfg.Close()
@@ -57,7 +53,7 @@ func main() {
 		panic(err)
 	}
 
-	workcfg, close := GetConfiguration(context.Background(), cfg, &event.EventWorker{})
+	workcfg, close := GetConfiguration(context.Background(), cfg)
 	defer close()
 
 	for {
@@ -82,7 +78,7 @@ func main() {
 
 }
 
-func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, workcfg analyzeWork) {
+func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, workcfg entity.AnalyzeWork) {
 
 	readbyte := make([]byte, 10240)
 	for {

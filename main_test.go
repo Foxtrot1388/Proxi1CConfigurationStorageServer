@@ -3,7 +3,7 @@ package main
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
 	"Proxi1CConfigurationStorageServer/internal/entity"
-	"Proxi1CConfigurationStorageServer/internal/event"
+	"Proxi1CConfigurationStorageServer/internal/listenereventchan"
 	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
 	"context"
 	"io/ioutil"
@@ -49,8 +49,6 @@ func TestSampleXML(t *testing.T) {
 
 func TestEvent(t *testing.T) {
 
-	eventchan := make(chan entity.OneCEvents, 20)
-
 	var testevent entity.CommitObject
 	testevent.Auth.User = "TestUser"
 	testevent.Conf = "Main"
@@ -58,14 +56,20 @@ func TestEvent(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	EventWorker := event.EventWorker{}
-	go EventWorker.EventListener(ctx, &config.Config{Scriptfile: map[string]string{"DevDepot_commitObjects": "CommitObject.os"}}, eventchan)
+	eventWorker := listenereventchan.OScriptListener{
+		entity.EventListen{
+			Configuration: &entity.WorkConfiguration{
+				Eventchan: make(chan entity.OneCEvents, 20),
+			},
+		},
+	}
+	go eventWorker.Listen(ctx, &config.Config{Scriptfile: map[string]string{"DevDepot_commitObjects": "CommitObject.os"}})
 
-	eventchan <- testevent
-	eventchan <- testevent
+	eventWorker.Configuration.Eventchan <- testevent
+	eventWorker.Configuration.Eventchan <- testevent
 
 	time.Sleep(time.Duration(10 * time.Second))
 	cancel()
-	close(eventchan)
+	close(eventWorker.Configuration.Eventchan)
 
 }

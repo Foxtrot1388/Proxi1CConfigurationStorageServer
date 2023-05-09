@@ -9,16 +9,18 @@ import (
 	"golang.org/x/text/encoding/charmap"
 )
 
-type WorkersConfiguration struct {
-	pool      chan int
-	Eventchan chan entity.OneCEvents
+type PoolWorkersConfiguration struct {
+	entity.WorkConfiguration
+	pool chan int
 }
 
-func GetPoolWorkers(cfg *config.Config) *WorkersConfiguration {
+func GetPoolWorkers(cfg *config.Config) *PoolWorkersConfiguration {
 
-	workcfg := WorkersConfiguration{
-		Eventchan: make(chan entity.OneCEvents, 20), // to cfg?
-		pool:      make(chan int, cfg.NumAnalizeWorkers),
+	workcfg := PoolWorkersConfiguration{
+		WorkConfiguration: entity.WorkConfiguration{
+			Eventchan: make(chan entity.OneCEvents, 20), // to cfg?
+		},
+		pool: make(chan int, cfg.NumAnalizeWorkers),
 	}
 
 	for i := 0; i < cfg.NumAnalizeWorkers; i++ {
@@ -28,7 +30,7 @@ func GetPoolWorkers(cfg *config.Config) *WorkersConfiguration {
 	return &workcfg
 }
 
-func (w *WorkersConfiguration) Analyze(str string) {
+func (w *PoolWorkersConfiguration) Analyze(str string) {
 	select {
 	case id := <-w.pool:
 		go func(tokenid int) {
@@ -40,12 +42,12 @@ func (w *WorkersConfiguration) Analyze(str string) {
 	}
 }
 
-func (w *WorkersConfiguration) Close() {
+func (w *PoolWorkersConfiguration) Close() {
 	close(w.pool)
 	close(w.Eventchan)
 }
 
-func (w *WorkersConfiguration) analyzeXML(xmlreqest string) {
+func (w *PoolWorkersConfiguration) analyzeXML(xmlreqest string) {
 
 	firstindex := strings.Index(xmlreqest, "<?xml")
 	if firstindex == -1 {
