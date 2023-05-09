@@ -2,6 +2,7 @@ package main
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
+	"Proxi1CConfigurationStorageServer/internal/entity"
 	"Proxi1CConfigurationStorageServer/internal/event"
 	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
 	"context"
@@ -14,6 +15,29 @@ import (
 )
 
 var configname *string = flag.String("configname", "app.yaml", "target config")
+
+type analyzeWork interface {
+	Analyze(string)
+	Close()
+}
+
+type eventListener interface {
+	EventListener(context.Context, *config.Config, <-chan entity.OneCEvents)
+}
+
+func GetConfiguration(ctx context.Context, cfg *config.Config, e eventListener) (analyzeWork, func()) {
+
+	workcfg := tcpxml.GetPoolWorkers(cfg)
+
+	newctx, cancelctx := context.WithCancel(ctx)
+	go e.EventListener(newctx, cfg, workcfg.Eventchan)
+
+	return workcfg, func() {
+		workcfg.Close()
+		cancelctx()
+	}
+
+}
 
 func main() {
 
@@ -33,8 +57,8 @@ func main() {
 		panic(err)
 	}
 
-	workcfg := tcpxml.GetConfiguration(context.Background(), cfg, event.EventListener)
-	defer workcfg.Close()
+	workcfg, close := GetConfiguration(context.Background(), cfg, &event.EventWorker{})
+	defer close()
 
 	for {
 		if conin, err := portlistener.Accept(); err == nil {
@@ -58,7 +82,7 @@ func main() {
 
 }
 
-func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, workcfg *tcpxml.WorkersConfiguration) {
+func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, workcfg analyzeWork) {
 
 	readbyte := make([]byte, 10240)
 	for {
@@ -77,7 +101,7 @@ func readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logd
 			connout.Write(readbyte[:n])
 
 			if workcfg != nil {
-				workcfg.FreeLockPoolAnalize(string(readbyte[:n]))
+				workcfg.Analyze(string(readbyte[:n]))
 			}
 
 		}

@@ -19,10 +19,10 @@ func TestSampleXML(t *testing.T) {
 		panic(err)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(10)*time.Second)
 	wg := sync.WaitGroup{}
+	wg.Add(1)
 
-	f := func(ctx context.Context, cfg *config.Config, ch <-chan entity.OneCEvents) {
+	f := func(ctx context.Context, ch <-chan entity.OneCEvents) {
 		defer wg.Done()
 		select {
 		case val := <-ch:
@@ -35,10 +35,14 @@ func TestSampleXML(t *testing.T) {
 		}
 	}
 
-	wg.Add(1)
-	workers := tcpxml.GetConfiguration(ctx, &config.Config{NumAnalizeWorkers: 1}, f)
+	workers := tcpxml.GetPoolWorkers(&config.Config{NumAnalizeWorkers: 1})
 	defer workers.Close()
-	workers.FreeLockPoolAnalize(string(xmlFile))
+	workers.Analyze(string(xmlFile))
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(10)*time.Second)
+	defer cancel()
+	go f(ctx, workers.Eventchan)
+
 	wg.Wait()
 
 }
@@ -54,7 +58,8 @@ func TestEvent(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	go event.EventListener(ctx, &config.Config{Scriptfile: map[string]string{"DevDepot_commitObjects": "CommitObject.os"}}, eventchan)
+	EventWorker := event.EventWorker{}
+	go EventWorker.EventListener(ctx, &config.Config{Scriptfile: map[string]string{"DevDepot_commitObjects": "CommitObject.os"}}, eventchan)
 
 	eventchan <- testevent
 	eventchan <- testevent

@@ -3,7 +3,6 @@ package tcpxml
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
 	"Proxi1CConfigurationStorageServer/internal/entity"
-	"context"
 	"encoding/xml"
 	"strings"
 
@@ -12,14 +11,13 @@ import (
 
 type WorkersConfiguration struct {
 	pool      chan int
-	eventchan chan entity.OneCEvents
-	cancelctx context.CancelFunc
+	Eventchan chan entity.OneCEvents
 }
 
-func GetConfiguration(ctx context.Context, cfg *config.Config, f func(context.Context, *config.Config, <-chan entity.OneCEvents)) *WorkersConfiguration {
+func GetPoolWorkers(cfg *config.Config) *WorkersConfiguration {
 
 	workcfg := WorkersConfiguration{
-		eventchan: make(chan entity.OneCEvents, 20), // to cfg?
+		Eventchan: make(chan entity.OneCEvents, 20), // to cfg?
 		pool:      make(chan int, cfg.NumAnalizeWorkers),
 	}
 
@@ -27,19 +25,14 @@ func GetConfiguration(ctx context.Context, cfg *config.Config, f func(context.Co
 		workcfg.pool <- i
 	}
 
-	newctx, cancel := context.WithCancel(ctx)
-	workcfg.cancelctx = cancel
-	go f(newctx, cfg, workcfg.eventchan)
-
 	return &workcfg
-
 }
 
-func (w *WorkersConfiguration) FreeLockPoolAnalize(str string) {
+func (w *WorkersConfiguration) Analyze(str string) {
 	select {
 	case id := <-w.pool:
 		go func(tokenid int) {
-			w.analyze(str)
+			w.analyzeXML(str)
 			w.pool <- tokenid
 		}(id)
 	default:
@@ -49,11 +42,10 @@ func (w *WorkersConfiguration) FreeLockPoolAnalize(str string) {
 
 func (w *WorkersConfiguration) Close() {
 	close(w.pool)
-	w.cancelctx()
-	close(w.eventchan)
+	close(w.Eventchan)
 }
 
-func (w *WorkersConfiguration) analyze(xmlreqest string) {
+func (w *WorkersConfiguration) analyzeXML(xmlreqest string) {
 
 	firstindex := strings.Index(xmlreqest, "<?xml")
 	if firstindex == -1 {
@@ -90,7 +82,7 @@ func (w *WorkersConfiguration) analyze(xmlreqest string) {
 			var result entity.CommitObject
 			d.DecodeElement(&result, &se)
 			result.Conf = se.Attr[entity.AttrCommitObjectConfiguration].Value
-			w.eventchan <- result
+			w.Eventchan <- result
 		}
 	default:
 		return

@@ -11,20 +11,23 @@ import (
 
 type aggevents []entity.OneCEvents
 
-func EventListener(ctx context.Context, cfg *config.Config, ch <-chan entity.OneCEvents) {
+type EventWorker struct {
+}
+
+func (e *EventWorker) EventListener(ctx context.Context, cfg *config.Config, ch <-chan entity.OneCEvents) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			rawevent := readNextPart(ch)
-			doEvent(cfg, rawevent)
+			rawevent := e.readNextPart(ch)
+			e.doEvent(cfg, rawevent)
 			time.Sleep(time.Duration(5 * time.Minute))
 		}
 	}
 }
 
-func readNextPart(ch <-chan entity.OneCEvents) []entity.OneCEvents {
+func (e *EventWorker) readNextPart(ch <-chan entity.OneCEvents) []entity.OneCEvents {
 	var rawevent []entity.OneCEvents
 	for {
 		select {
@@ -39,7 +42,7 @@ func readNextPart(ch <-chan entity.OneCEvents) []entity.OneCEvents {
 	}
 }
 
-func doEvent(cfg *config.Config, val []entity.OneCEvents) {
+func (e *EventWorker) doEvent(cfg *config.Config, val []entity.OneCEvents) {
 
 	aggevent := make(map[string]aggevents, len(cfg.Scriptfile))
 	for i := 0; i < len(val); i++ {

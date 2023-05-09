@@ -4,8 +4,10 @@ type OneCEvents interface {
 	GetCompactEvent() interface{}
 }
 
-const AttrCommitObjectEvent = 2
-const AttrCommitObjectConfiguration = 1
+const (
+	AttrCommitObjectEvent         = 2
+	AttrCommitObjectConfiguration = 1
+)
 
 type CommitObject struct {
 	Conf string
