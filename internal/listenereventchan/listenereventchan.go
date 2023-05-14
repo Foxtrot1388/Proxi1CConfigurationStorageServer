@@ -3,6 +3,7 @@ package listenereventchan
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
 	"Proxi1CConfigurationStorageServer/internal/entity/commitobject"
+	"Proxi1CConfigurationStorageServer/internal/entity/reviseobject"
 	"context"
 	"encoding/json"
 	"os/exec"
@@ -58,6 +59,8 @@ func (e *OScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
 		switch val[i].(type) {
 		case commitobject.CommitObject:
 			aggevent["DevDepot_commitObjects"] = append(aggevent["DevDepot_commitObjects"], val[i])
+		case reviseobject.ReviseObject:
+			aggevent["DevDepot_reviseDevObjects"] = append(aggevent["DevDepot_reviseDevObjects"], val[i])
 		}
 	}
 

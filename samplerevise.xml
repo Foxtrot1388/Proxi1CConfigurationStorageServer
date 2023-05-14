@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<crs:call xmlns:crs="http://v8.1c.ru/8.2/crs" alias="main" name="DevDepot_reviseDevObjects" version="8.3.19.1331">
+    <crs:auth user="User.Test"/>
+    <crs:params>
+        <crs:revise value="false"/>
+        <crs:objects>
+            <crs:value>
+                <crs:second>
+                    <crs:name value="Object1"/>
+                </crs:second>
+            </crs:value>
+            <crs:value>
+                <crs:second>
+                    <crs:name value="Object2"/>
+                </crs:second>
+            </crs:value>
+        </crs:objects>
+    </crs:params>
+</crs:call>

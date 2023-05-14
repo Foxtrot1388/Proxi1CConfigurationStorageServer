@@ -5,3 +5,4 @@ debug: false
 numanalizeworkers: 3
 scriptfile:
   DevDepot_commitObjects: "CommitObject.os"
+  DevDepot_reviseDevObjects: "ReviseObject.os"

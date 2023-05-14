@@ -3,6 +3,7 @@ package tcpxml
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
 	"Proxi1CConfigurationStorageServer/internal/entity/commitobject"
+	"Proxi1CConfigurationStorageServer/internal/entity/reviseobject"
 	"encoding/xml"
 	"strings"
 
@@ -82,6 +83,11 @@ func (w *PoolWorkersConfiguration) analyzeXML(xmlreqest string) {
 			var result commitobject.CommitObject
 			d.DecodeElement(&result, &se)
 			result.Conf = se.Attr[commitobject.AttrCommitObjectConfiguration].Value
+			w.Eventchan <- result
+		} else if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[reviseobject.AttrReviseObjectEvent].Value == "DevDepot_reviseDevObjects" {
+			var result reviseobject.ReviseObject
+			d.DecodeElement(&result, &se)
+			result.Conf = se.Attr[reviseobject.AttrReviseObjectConfiguration].Value
 			w.Eventchan <- result
 		}
 	default:
