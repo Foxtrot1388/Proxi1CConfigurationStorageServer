@@ -2,7 +2,7 @@ package tcpxml
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
-	"Proxi1CConfigurationStorageServer/internal/entity"
+	"Proxi1CConfigurationStorageServer/internal/entity/commitobject"
 	"encoding/xml"
 	"strings"
 
@@ -10,17 +10,15 @@ import (
 )
 
 type PoolWorkersConfiguration struct {
-	entity.WorkConfiguration
-	pool chan int
+	Eventchan chan<- interface{}
+	pool      chan int
 }
 
-func GetPoolWorkers(cfg *config.Config) *PoolWorkersConfiguration {
+func GetPoolWorkers(cfg *config.Config, eventchan chan<- interface{}) *PoolWorkersConfiguration {
 
 	workcfg := PoolWorkersConfiguration{
-		WorkConfiguration: entity.WorkConfiguration{
-			Eventchan: make(chan entity.OneCEvents, 20), // to cfg?
-		},
-		pool: make(chan int, cfg.NumAnalizeWorkers),
+		Eventchan: eventchan, // to cfg?
+		pool:      make(chan int, cfg.NumAnalizeWorkers),
 	}
 
 	for i := 0; i < cfg.NumAnalizeWorkers; i++ {
@@ -80,10 +78,10 @@ func (w *PoolWorkersConfiguration) analyzeXML(xmlreqest string) {
 
 	switch se := t.(type) {
 	case xml.StartElement:
-		if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[entity.AttrCommitObjectEvent].Value == "DevDepot_commitObjects" {
-			var result entity.CommitObject
+		if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[commitobject.AttrCommitObjectEvent].Value == "DevDepot_commitObjects" {
+			var result commitobject.CommitObject
 			d.DecodeElement(&result, &se)
-			result.Conf = se.Attr[entity.AttrCommitObjectConfiguration].Value
+			result.Conf = se.Attr[commitobject.AttrCommitObjectConfiguration].Value
 			w.Eventchan <- result
 		}
 	default:

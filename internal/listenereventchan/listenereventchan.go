@@ -2,17 +2,25 @@ package listenereventchan
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
-	"Proxi1CConfigurationStorageServer/internal/entity"
+	"Proxi1CConfigurationStorageServer/internal/entity/commitobject"
 	"context"
 	"encoding/json"
 	"os/exec"
 	"time"
 )
 
-type aggevents []entity.OneCEvents
+type oneCEvents interface {
+	GetCompactEvent() interface{}
+}
+
+type aggevents []oneCEvents
 
 type OScriptListener struct {
-	entity.EventListen
+	eventchan <-chan interface{}
+}
+
+func GetListener(eventchan <-chan interface{}) *OScriptListener {
+	return &OScriptListener{eventchan: eventchan}
 }
 
 func (e *OScriptListener) Listen(ctx context.Context, cfg *config.Config) {
@@ -21,34 +29,34 @@ func (e *OScriptListener) Listen(ctx context.Context, cfg *config.Config) {
 		case <-ctx.Done():
 			return
 		default:
-			rawevent := e.readNextPart(e.Configuration.Eventchan)
+			rawevent := e.readNextPart()
 			e.doEvent(cfg, rawevent)
 			time.Sleep(time.Duration(5 * time.Minute))
 		}
 	}
 }
 
-func (e *OScriptListener) readNextPart(ch <-chan entity.OneCEvents) []entity.OneCEvents {
-	var rawevent []entity.OneCEvents
+func (e *OScriptListener) readNextPart() []oneCEvents {
+	var rawevent []oneCEvents
 	for {
 		select {
-		case val, ok := <-ch:
+		case val, ok := <-e.eventchan:
 			if !ok {
 				return rawevent
 			}
-			rawevent = append(rawevent, val)
+			rawevent = append(rawevent, val.(oneCEvents))
 		default:
 			return rawevent
 		}
 	}
 }
 
-func (e *OScriptListener) doEvent(cfg *config.Config, val []entity.OneCEvents) {
+func (e *OScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
 
 	aggevent := make(map[string]aggevents, len(cfg.Scriptfile))
 	for i := 0; i < len(val); i++ {
 		switch val[i].(type) {
-		case entity.CommitObject:
+		case commitobject.CommitObject:
 			aggevent["DevDepot_commitObjects"] = append(aggevent["DevDepot_commitObjects"], val[i])
 		}
 	}
