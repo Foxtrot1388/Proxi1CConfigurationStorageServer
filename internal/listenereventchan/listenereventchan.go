@@ -2,8 +2,6 @@ package listenereventchan
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
-	"Proxi1CConfigurationStorageServer/internal/entity/commitobject"
-	"Proxi1CConfigurationStorageServer/internal/entity/reviseobject"
 	"context"
 	"encoding/json"
 	"os/exec"
@@ -12,6 +10,7 @@ import (
 
 type oneCEvents interface {
 	GetCompactEvent() interface{}
+	Append(map[string]aggevents)
 }
 
 type aggevents []oneCEvents
@@ -56,12 +55,7 @@ func (e *OScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
 
 	aggevent := make(map[string]aggevents, len(cfg.Scriptfile))
 	for i := 0; i < len(val); i++ {
-		switch val[i].(type) {
-		case commitobject.CommitObject:
-			aggevent["DevDepot_commitObjects"] = append(aggevent["DevDepot_commitObjects"], val[i])
-		case reviseobject.ReviseObject:
-			aggevent["DevDepot_reviseDevObjects"] = append(aggevent["DevDepot_reviseDevObjects"], val[i])
-		}
+		val[i].Append(aggevent)
 	}
 
 	for k, v := range aggevent {

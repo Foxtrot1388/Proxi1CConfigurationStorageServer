@@ -5,6 +5,13 @@ const (
 	AttrCommitObjectConfiguration = 1
 )
 
+type oneCEvents interface {
+	GetCompactEvent() interface{}
+	Append(map[string]aggevents)
+}
+
+type aggevents []oneCEvents
+
 type CommitObject struct {
 	Conf string
 	Auth struct {
@@ -37,4 +44,8 @@ func (com CommitObject) GetCompactEvent() interface{} {
 	}
 	dat["objects"] = objects
 	return dat
+}
+
+func (val CommitObject) Append(collection map[string]aggevents) {
+	collection["DevDepot_commitObjects"] = append(collection["DevDepot_commitObjects"], val)
 }

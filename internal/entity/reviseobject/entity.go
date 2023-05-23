@@ -5,6 +5,13 @@ const (
 	AttrReviseObjectConfiguration = 1
 )
 
+type oneCEvents interface {
+	GetCompactEvent() interface{}
+	Append(map[string]aggevents)
+}
+
+type aggevents []oneCEvents
+
 type ReviseObject struct {
 	Conf string
 	Auth struct {
@@ -35,4 +42,8 @@ func (com ReviseObject) GetCompactEvent() interface{} {
 	}
 	dat["objects"] = objects
 	return dat
+}
+
+func (val ReviseObject) Append(collection map[string]aggevents) {
+	collection["DevDepot_reviseDevObjects"] = append(collection["DevDepot_reviseDevObjects"], val)
 }
