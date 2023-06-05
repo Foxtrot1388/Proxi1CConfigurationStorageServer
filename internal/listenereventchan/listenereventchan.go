@@ -4,7 +4,9 @@ import (
 	"Proxi1CConfigurationStorageServer/internal/config"
 	"context"
 	"encoding/json"
+	"errors"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -15,15 +17,15 @@ type oneCEvents interface {
 
 type aggevents []oneCEvents
 
-type OScriptListener struct {
+type ScriptListener struct {
 	eventchan <-chan interface{}
 }
 
-func GetListener(eventchan <-chan interface{}) *OScriptListener {
-	return &OScriptListener{eventchan: eventchan}
+func GetListener(eventchan <-chan interface{}) *ScriptListener {
+	return &ScriptListener{eventchan: eventchan}
 }
 
-func (e *OScriptListener) Listen(ctx context.Context, cfg *config.Config) {
+func (e *ScriptListener) Listen(ctx context.Context, cfg *config.Config) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -36,7 +38,7 @@ func (e *OScriptListener) Listen(ctx context.Context, cfg *config.Config) {
 	}
 }
 
-func (e *OScriptListener) readNextPart() []oneCEvents {
+func (e *ScriptListener) readNextPart() []oneCEvents {
 	var rawevent []oneCEvents
 	for {
 		select {
@@ -51,7 +53,7 @@ func (e *OScriptListener) readNextPart() []oneCEvents {
 	}
 }
 
-func (e *OScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
+func (e *ScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
 
 	aggevent := make(map[string]aggevents, len(cfg.Scriptfile))
 	for i := 0; i < len(val); i++ {
@@ -59,8 +61,17 @@ func (e *OScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
 	}
 
 	for k, v := range aggevent {
-		cmd := exec.Command("oscript", cfg.Scriptfile[k], v.getJSON())
-		err := cmd.Run()
+		var err error
+		switch {
+		case strings.HasSuffix(cfg.Scriptfile[k], ".os"):
+			cmd := exec.Command("oscript", cfg.Scriptfile[k], v.getJSON())
+			err = cmd.Run()
+		case strings.HasSuffix(cfg.Scriptfile[k], ".sbsl"):
+			cmd := exec.Command("executor", "-s "+cfg.Scriptfile[k], v.getJSON())
+			err = cmd.Run()
+		default:
+			err = errors.New("Unknown script type!")
+		}
 		if err != nil {
 			panic(err)
 		}
