@@ -1,0 +1,135 @@
+package http
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+type Listener struct {
+	server *http.Server
+}
+
+type analyzeWork interface {
+	Analyze(string)
+}
+
+type middlewaredata struct {
+	host        string
+	port        string
+	infologhost *log.Logger
+	workcfg     analyzeWork
+}
+
+var hopHeaders = []string{
+	"Connection",
+	"Keep-Alive",
+	"Proxy-Authenticate",
+	"Proxy-Authorization",
+	"Te", // canonicalized version of "TE"
+	"Trailers",
+	"Transfer-Encoding",
+	"Upgrade",
+}
+
+func New(listenPort string) (Listener, error) {
+
+	fmt.Println("Use http storage...")
+
+	server := &http.Server{
+		Addr:    ":" + listenPort,
+		Handler: nil,
+	}
+
+	return Listener{server}, nil
+
+}
+
+func (l *Listener) Do(host, port string, workcfg interface{}, infologlocal, infologhost *log.Logger) {
+
+	l.server.Handler = middlewareLog(http.HandlerFunc(all), infologlocal, &middlewaredata{
+		host:        host,
+		port:        port,
+		infologhost: infologhost,
+		workcfg:     workcfg.(analyzeWork),
+	})
+	_ = l.server.ListenAndServe()
+
+}
+
+func middlewareLog(next http.Handler, logdebug *log.Logger, data *middlewaredata) http.Handler {
+
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		if logdebug != nil {
+			b, _ := io.ReadAll(r.Body)
+			logdebug.Println(string(b))
+			r.Body.Close()
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(context.Background(), "middleware", data)))
+	}
+
+	return http.HandlerFunc(fn)
+}
+
+func all(wr http.ResponseWriter, req *http.Request) {
+
+	data := req.Context().Value("middleware").(*middlewaredata)
+
+	requestURL := fmt.Sprintf("http://%s:%s"+req.URL.Path, data.host, data.port)
+	b, _ := io.ReadAll(req.Body)
+	reqhost, err := http.NewRequest(http.MethodPost, requestURL, bytes.NewReader(b))
+	if err != nil {
+		fmt.Printf("client: could not create request: %s\n", err)
+		log.Fatal(err)
+		return
+	}
+
+	copyHeader(reqhost.Header, req.Header)
+
+	res, err := http.DefaultClient.Do(reqhost)
+	if err != nil {
+		fmt.Printf("client: error making http request: %s\n", err)
+		log.Fatal(err)
+		return
+	}
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
+	if err != nil {
+		fmt.Printf("client: could not read response body: %s\n", err)
+		log.Fatal(err)
+		return
+	}
+
+	if data.infologhost != nil {
+		data.infologhost.Println(string(resBody))
+	}
+
+	if data.workcfg != nil {
+		data.workcfg.Analyze(string(resBody))
+	}
+
+	delHopHeaders(res.Header)
+	copyHeader(wr.Header(), res.Header)
+	wr.WriteHeader(res.StatusCode)
+	wr.Write(resBody)
+
+}
+
+func delHopHeaders(header http.Header) {
+	for _, h := range hopHeaders {
+		header.Del(h)
+	}
+}
+
+func copyHeader(dst, src http.Header) {
+	for k, vv := range src {
+		for _, v := range vv {
+			dst.Add(k, v)
+		}
+	}
+}
