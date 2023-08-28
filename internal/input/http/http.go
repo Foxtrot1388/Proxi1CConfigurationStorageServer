@@ -65,9 +65,9 @@ func middlewareLog(next http.Handler, logdebug *log.Logger, data *middlewaredata
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if logdebug != nil {
-			b, _ := io.ReadAll(r.Body)
-			logdebug.Println(string(b))
-			r.Body.Close()
+			body, _ := io.ReadAll(r.Body)
+			logdebug.Println(string(body))
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(context.Background(), "middleware", data)))
 	}
@@ -80,8 +80,7 @@ func all(wr http.ResponseWriter, req *http.Request) {
 	data := req.Context().Value("middleware").(*middlewaredata)
 
 	requestURL := fmt.Sprintf("http://%s:%s"+req.URL.Path, data.host, data.port)
-	b, _ := io.ReadAll(req.Body)
-	reqhost, err := http.NewRequest(http.MethodPost, requestURL, bytes.NewReader(b))
+	reqhost, err := http.NewRequest(http.MethodPost, requestURL, req.Body)
 	if err != nil {
 		fmt.Printf("client: could not create request: %s\n", err)
 		log.Fatal(err)
