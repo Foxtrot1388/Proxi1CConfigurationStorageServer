@@ -2,6 +2,7 @@ package listenereventchan
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
+	"Proxi1CConfigurationStorageServer/internal/entity"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,18 +11,11 @@ import (
 	"time"
 )
 
-type oneCEvents interface {
-	GetCompactEvent() interface{}
-	Append(map[string]aggevents)
-}
-
-type aggevents []oneCEvents
-
 type ScriptListener struct {
-	eventchan <-chan interface{}
+	eventchan <-chan entity.OneCEvents
 }
 
-func GetListener(eventchan <-chan interface{}) *ScriptListener {
+func GetListener(eventchan <-chan entity.OneCEvents) *ScriptListener {
 	return &ScriptListener{eventchan: eventchan}
 }
 
@@ -33,29 +27,29 @@ func (e *ScriptListener) Listen(ctx context.Context, cfg *config.Config) {
 		default:
 			rawevent := e.readNextPart()
 			e.doEvent(cfg, rawevent)
-			time.Sleep(time.Duration(5 * time.Minute))
+			time.Sleep(time.Duration(20 * time.Second))
 		}
 	}
 }
 
-func (e *ScriptListener) readNextPart() []oneCEvents {
-	var rawevent []oneCEvents
+func (e *ScriptListener) readNextPart() []entity.OneCEvents {
+	var rawevent []entity.OneCEvents
 	for {
 		select {
 		case val, ok := <-e.eventchan:
 			if !ok {
 				return rawevent
 			}
-			rawevent = append(rawevent, val.(oneCEvents))
+			rawevent = append(rawevent, val)
 		default:
 			return rawevent
 		}
 	}
 }
 
-func (e *ScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
+func (e *ScriptListener) doEvent(cfg *config.Config, val []entity.OneCEvents) {
 
-	aggevent := make(map[string]aggevents, len(cfg.Scriptfile))
+	aggevent := make(map[string]entity.Aggevents, len(cfg.Scriptfile))
 	for i := 0; i < len(val); i++ {
 		val[i].Append(aggevent)
 	}
@@ -64,10 +58,10 @@ func (e *ScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
 		var err error
 		switch {
 		case strings.HasSuffix(cfg.Scriptfile[k], ".os"):
-			cmd := exec.Command("oscript", cfg.Scriptfile[k], v.getJSON())
+			cmd := exec.Command("oscript", cfg.Scriptfile[k], getJSON(v))
 			err = cmd.Run()
 		case strings.HasSuffix(cfg.Scriptfile[k], ".sbsl"):
-			cmd := exec.Command("executor", "-s "+cfg.Scriptfile[k], v.getJSON())
+			cmd := exec.Command("executor", "-s "+cfg.Scriptfile[k], getJSON(v))
 			err = cmd.Run()
 		default:
 			err = errors.New("Unknown script type!")
@@ -79,7 +73,7 @@ func (e *ScriptListener) doEvent(cfg *config.Config, val []oneCEvents) {
 
 }
 
-func (ob aggevents) getJSON() string {
+func getJSON(ob entity.Aggevents) string {
 	dat := make([]interface{}, len(ob))
 	for i := 0; i < len(ob); i++ {
 		dat[i] = ob[i].GetCompactEvent()

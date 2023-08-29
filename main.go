@@ -2,6 +2,7 @@ package main
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
+	"Proxi1CConfigurationStorageServer/internal/entity"
 	storagehttp "Proxi1CConfigurationStorageServer/internal/input/http"
 	storagetcp "Proxi1CConfigurationStorageServer/internal/input/tcp"
 	"Proxi1CConfigurationStorageServer/internal/listenereventchan"
@@ -48,7 +49,7 @@ func main() {
 
 func GetConfiguration(ctx context.Context, cfg *config.Config) (AnalyzeWork, func()) {
 
-	eventchan := make(chan interface{}, 20)
+	eventchan := make(chan entity.OneCEvents, 20)
 	workcfg := tcpxml.GetPoolWorkers(cfg, eventchan)
 	eventlistener := listenereventchan.GetListener(eventchan)
 

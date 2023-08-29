@@ -2,8 +2,7 @@ package tcpxml
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
-	"Proxi1CConfigurationStorageServer/internal/entity/commitobject"
-	"Proxi1CConfigurationStorageServer/internal/entity/reviseobject"
+	"Proxi1CConfigurationStorageServer/internal/entity"
 	"encoding/xml"
 	"strings"
 
@@ -11,11 +10,11 @@ import (
 )
 
 type PoolWorkersConfiguration struct {
-	Eventchan chan<- interface{}
+	Eventchan chan<- entity.OneCEvents
 	pool      chan int
 }
 
-func GetPoolWorkers(cfg *config.Config, eventchan chan<- interface{}) *PoolWorkersConfiguration {
+func GetPoolWorkers(cfg *config.Config, eventchan chan<- entity.OneCEvents) *PoolWorkersConfiguration {
 
 	workcfg := PoolWorkersConfiguration{
 		Eventchan: eventchan, // to cfg?
@@ -67,10 +66,10 @@ func (w *PoolWorkersConfiguration) analyzeXML(xmlreqest string) {
 		return
 	}
 
-	_, err = d.Token()
+	/*_, err = d.Token()
 	if err != nil {
 		return
-	}
+	}*/
 
 	t, err := d.Token()
 	if err != nil {
@@ -79,15 +78,15 @@ func (w *PoolWorkersConfiguration) analyzeXML(xmlreqest string) {
 
 	switch se := t.(type) {
 	case xml.StartElement:
-		if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[commitobject.AttrCommitObjectEvent].Value == "DevDepot_commitObjects" {
-			var result commitobject.CommitObject
+		if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[entity.AttrCommitObjectEvent].Value == "DevDepot_commitObjects" {
+			var result entity.CommitObject
 			d.DecodeElement(&result, &se)
-			result.Conf = se.Attr[commitobject.AttrCommitObjectConfiguration].Value
+			result.Conf = se.Attr[entity.AttrCommitObjectConfiguration].Value
 			w.Eventchan <- result
-		} else if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[reviseobject.AttrReviseObjectEvent].Value == "DevDepot_reviseDevObjects" {
-			var result reviseobject.ReviseObject
+		} else if se.Name.Local == "call" && len(se.Attr) == 4 && se.Attr[entity.AttrReviseObjectEvent].Value == "DevDepot_reviseDevObjects" {
+			var result entity.ReviseObject
 			d.DecodeElement(&result, &se)
-			result.Conf = se.Attr[reviseobject.AttrReviseObjectConfiguration].Value
+			result.Conf = se.Attr[entity.AttrReviseObjectConfiguration].Value
 			w.Eventchan <- result
 		}
 	default:

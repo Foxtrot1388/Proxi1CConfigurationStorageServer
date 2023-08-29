@@ -2,8 +2,7 @@ package main
 
 import (
 	"Proxi1CConfigurationStorageServer/internal/config"
-	"Proxi1CConfigurationStorageServer/internal/entity/commitobject"
-	"Proxi1CConfigurationStorageServer/internal/entity/reviseobject"
+	"Proxi1CConfigurationStorageServer/internal/entity"
 	"Proxi1CConfigurationStorageServer/internal/listenereventchan"
 	tcpxml "Proxi1CConfigurationStorageServer/internal/xml"
 	"context"
@@ -20,15 +19,15 @@ func TestCommitSampleXML(t *testing.T) {
 		panic(err)
 	}
 
-	eventchan := make(chan interface{}, 20)
+	eventchan := make(chan entity.OneCEvents, 20)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	f := func(ctx context.Context, ch <-chan interface{}) {
+	f := func(ctx context.Context, ch <-chan entity.OneCEvents) {
 		defer wg.Done()
 		select {
 		case val := <-ch:
-			cast := val.(commitobject.CommitObject)
+			cast := val.(entity.CommitObject)
 			if !(cast.Auth.User == "User.Test" && cast.Conf == "main" && cast.Params.Comment == "Comment for commit" && len(cast.Params.Changes.Value) == 3) {
 				t.Fail()
 			}
@@ -56,15 +55,15 @@ func TestReviseSampleXML(t *testing.T) {
 		panic(err)
 	}
 
-	eventchan := make(chan interface{}, 20)
+	eventchan := make(chan entity.OneCEvents, 20)
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	f := func(ctx context.Context, ch <-chan interface{}) {
+	f := func(ctx context.Context, ch <-chan entity.OneCEvents) {
 		defer wg.Done()
 		select {
 		case val := <-ch:
-			cast := val.(reviseobject.ReviseObject)
+			cast := val.(entity.ReviseObject)
 			if !(cast.Auth.User == "User.Test" && cast.Conf == "main" && len(cast.Params.Objects.Value) == 2) {
 				t.Fail()
 			}
@@ -87,12 +86,12 @@ func TestReviseSampleXML(t *testing.T) {
 
 func TestEvent(t *testing.T) {
 
-	var testevent commitobject.CommitObject
+	var testevent entity.CommitObject
 	testevent.Auth.User = "TestUser"
 	testevent.Conf = "Main"
 	testevent.Params.Comment = "Test comment"
 
-	eventchan := make(chan interface{}, 20)
+	eventchan := make(chan entity.OneCEvents, 20)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	eventWorker := listenereventchan.GetListener(eventchan)
