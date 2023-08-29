@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -65,11 +64,11 @@ func middlewareLog(next http.Handler, logdebug *log.Logger, data *middlewaredata
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		if logdebug != nil {
-			body, _ := io.ReadAll(r.Body)
+			body, _ := ioutil.ReadAll(r.Body)
 			logdebug.Println(string(body))
-			r.Body = io.NopCloser(bytes.NewBuffer(body))
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(context.Background(), "middleware", data)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(context.Background(), "data", data)))
 	}
 
 	return http.HandlerFunc(fn)
@@ -77,10 +76,17 @@ func middlewareLog(next http.Handler, logdebug *log.Logger, data *middlewaredata
 
 func all(wr http.ResponseWriter, req *http.Request) {
 
-	data := req.Context().Value("middleware").(*middlewaredata)
+	data := req.Context().Value("data").(*middlewaredata)
+	reqBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		fmt.Printf("client: could not read response body: %s\n", err)
+		log.Fatal(err)
+		return
+	}
+	bodyReader := bytes.NewReader(reqBody)
 
 	requestURL := fmt.Sprintf("http://%s:%s"+req.URL.Path, data.host, data.port)
-	reqhost, err := http.NewRequest(http.MethodPost, requestURL, req.Body)
+	reqhost, err := http.NewRequest(http.MethodPost, requestURL, bodyReader)
 	if err != nil {
 		fmt.Printf("client: could not create request: %s\n", err)
 		log.Fatal(err)
@@ -108,9 +114,7 @@ func all(wr http.ResponseWriter, req *http.Request) {
 		data.infologhost.Println(string(resBody))
 	}
 
-	if data.workcfg != nil {
-		data.workcfg.Analyze(string(resBody))
-	}
+	data.workcfg.Analyze(string(reqBody))
 
 	delHopHeaders(res.Header)
 	copyHeader(wr.Header(), res.Header)
