@@ -15,7 +15,7 @@ type ScriptListener struct {
 	eventchan <-chan entity.OneCEvents
 }
 
-func GetListener(eventchan <-chan entity.OneCEvents) *ScriptListener {
+func NewListener(eventchan <-chan entity.OneCEvents) *ScriptListener {
 	return &ScriptListener{eventchan: eventchan}
 }
 

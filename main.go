@@ -17,12 +17,12 @@ import (
 
 var configname *string = flag.String("configname", "app.yaml", "target config")
 
-type AnalyzeWork interface {
+type analyzerWork interface {
 	Analyze(string)
 	Close()
 }
 
-type Ilistener interface {
+type listener interface {
 	Do(host, port string, workcfg interface{}, infologlocal, infologhost *log.Logger)
 }
 
@@ -39,19 +39,19 @@ func main() {
 		infologhost = log.New(os.Stdout, "to "+cfg.Host+": ", log.LstdFlags)
 	}
 
-	workcfg, closecfg := GetConfiguration(context.Background(), cfg)
+	workcfg, closecfg := newConfiguration(context.Background(), cfg)
 	defer closecfg()
 
-	newlistener := NewListener(cfg.ListenPort, cfg.Type)
+	newlistener := newListener(cfg.ListenPort, cfg.Type)
 	newlistener.Do(cfg.Host, cfg.Port, workcfg, infologlocal, infologhost)
 
 }
 
-func GetConfiguration(ctx context.Context, cfg *config.Config) (AnalyzeWork, func()) {
+func newConfiguration(ctx context.Context, cfg *config.Config) (analyzerWork, func()) {
 
 	eventchan := make(chan entity.OneCEvents, 20)
-	workcfg := tcpxml.GetPoolWorkers(cfg, eventchan)
-	eventlistener := listenereventchan.GetListener(eventchan)
+	workcfg := tcpxml.NewPoolWorkers(cfg, eventchan)
+	eventlistener := listenereventchan.NewListener(eventchan)
 
 	newctx, cancelctx := context.WithCancel(ctx)
 	go eventlistener.Listen(newctx, cfg)
@@ -63,7 +63,7 @@ func GetConfiguration(ctx context.Context, cfg *config.Config) (AnalyzeWork, fun
 
 }
 
-func NewListener(listenport, typeinput string) Ilistener {
+func newListener(listenport, typeinput string) listener {
 
 	if typeinput == "tcp" {
 		newlistener, err := storagetcp.New(listenport)

@@ -36,7 +36,7 @@ func TestCommitSampleXML(t *testing.T) {
 		}
 	}
 
-	workers := tcpxml.GetPoolWorkers(&config.Config{NumAnalizeWorkers: 1}, eventchan)
+	workers := tcpxml.NewPoolWorkers(&config.Config{NumAnalizeWorkers: 1}, eventchan)
 	defer workers.Close()
 	workers.Analyze(string(xmlFile))
 
@@ -72,7 +72,7 @@ func TestReviseSampleXML(t *testing.T) {
 		}
 	}
 
-	workers := tcpxml.GetPoolWorkers(&config.Config{NumAnalizeWorkers: 1}, eventchan)
+	workers := tcpxml.NewPoolWorkers(&config.Config{NumAnalizeWorkers: 1}, eventchan)
 	defer workers.Close()
 	workers.Analyze(string(xmlFile))
 
@@ -94,7 +94,7 @@ func TestEvent(t *testing.T) {
 	eventchan := make(chan entity.OneCEvents, 20)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	eventWorker := listenereventchan.GetListener(eventchan)
+	eventWorker := listenereventchan.NewListener(eventchan)
 	go eventWorker.Listen(ctx, &config.Config{Scriptfile: map[string]string{"DevDepot_commitObjects": "CommitObject.os"}})
 
 	eventchan <- testevent

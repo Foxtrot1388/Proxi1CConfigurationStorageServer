@@ -14,7 +14,7 @@ type PoolWorkersConfiguration struct {
 	pool      chan int
 }
 
-func GetPoolWorkers(cfg *config.Config, eventchan chan<- entity.OneCEvents) *PoolWorkersConfiguration {
+func NewPoolWorkers(cfg *config.Config, eventchan chan<- entity.OneCEvents) *PoolWorkersConfiguration {
 
 	workcfg := PoolWorkersConfiguration{
 		Eventchan: eventchan, // to cfg?
@@ -65,11 +65,6 @@ func (w *PoolWorkersConfiguration) analyzeXML(xmlreqest string) {
 	if err != nil {
 		return
 	}
-
-	/*_, err = d.Token()
-	if err != nil {
-		return
-	}*/
 
 	t, err := d.Token()
 	if err != nil {

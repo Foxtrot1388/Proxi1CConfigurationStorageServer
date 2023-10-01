@@ -10,7 +10,7 @@ type Listener struct {
 	portlistener net.Listener
 }
 
-type analyzeWork interface {
+type analyzerWork interface {
 	Analyze(string)
 }
 
@@ -38,7 +38,7 @@ func (l *Listener) Do(host, port string, workcfg interface{}, infologlocal, info
 					panic(err)
 				}
 				done := make(chan struct{})
-				go l.readwritetotcp(conin, conout, done, infologhost, workcfg.(analyzeWork))
+				go l.readwritetotcp(conin, conout, done, infologhost, workcfg.(analyzerWork))
 				go l.readwritetotcp(conout, conin, done, infologlocal, nil)
 				<-done
 				<-done
@@ -51,7 +51,7 @@ func (l *Listener) Do(host, port string, workcfg interface{}, infologlocal, info
 
 }
 
-func (l *Listener) readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, workcfg analyzeWork) {
+func (l *Listener) readwritetotcp(conin net.Conn, connout net.Conn, done chan<- struct{}, logdebug *log.Logger, workcfg analyzerWork) {
 
 	readbyte := make([]byte, 10240)
 	for {

@@ -13,7 +13,7 @@ type Listener struct {
 	server *http.Server
 }
 
-type analyzeWork interface {
+type analyzerWork interface {
 	Analyze(string)
 }
 
@@ -21,7 +21,7 @@ type middlewaredata struct {
 	host        string
 	port        string
 	infologhost *log.Logger
-	workcfg     analyzeWork
+	workcfg     analyzerWork
 }
 
 var hopHeaders = []string{
@@ -54,7 +54,7 @@ func (l *Listener) Do(host, port string, workcfg interface{}, infologlocal, info
 		host:        host,
 		port:        port,
 		infologhost: infologhost,
-		workcfg:     workcfg.(analyzeWork),
+		workcfg:     workcfg.(analyzerWork),
 	})
 	_ = l.server.ListenAndServe()
 
