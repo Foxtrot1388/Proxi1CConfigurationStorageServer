@@ -13,7 +13,7 @@ type Config struct {
 	Port              string            `yaml:"port"`
 	ListenPort        string            `yaml:"listenport"`
 	Debug             bool              `yaml:"debug"`
-	NumAnalizeWorkers int               `yaml:"numanalizeworkers`
+	NumAnalizeWorkers int               `yaml:"numanalizeworkers"`
 	Scriptfile        map[string]string `yaml:"scriptfile"`
 }
 
@@ -27,6 +27,9 @@ func Get(configname *string) *Config {
 		panic(err)
 	}
 	err = yaml.Unmarshal(yamlFile, &config)
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println("Use " + *configname)
 	return &config
 }
