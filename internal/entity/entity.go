@@ -58,6 +58,9 @@ type ReviseObject struct {
 		User string `xml:"user,attr"`
 	} `xml:"auth"`
 	Params struct {
+		Revise struct {
+			Value string `xml:"value,attr"`
+		} `xml:"revise"`
 		Objects struct {
 			Value []struct {
 				Second struct {
@@ -77,6 +80,7 @@ func (com ReviseObject) GetCompactEvent() interface{} {
 	objects := make([]string, len(com.Params.Objects.Value))
 	dat["user"] = com.Auth.User
 	dat["configuration"] = com.Conf
+	dat["revise"] = (com.Params.Revise.Value == "true")
 	for i := 0; i < len(com.Params.Objects.Value); i++ {
 		objects[i] = com.Params.Objects.Value[i].Second.Super.Name.Value
 	}
