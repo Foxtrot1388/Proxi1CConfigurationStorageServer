@@ -19,4 +19,8 @@ scriptfile: # скрипты
     DevDepot_reviseDevObjects: "ReviseObject.os" # отпускание
 ```
 
-Под нагрузкой не тестировалось
+Для настройки сервера хранилища можно использовать статью https://wiseadvice-it.ru/o-kompanii/blog/articles/hranilishhe-konfiguracii-v-1s-8-3-ustanovka-i-nastroika/
+
+Для работы тестовых примеров в `CommitObject.os` и `ReviseObject.os` требуется установленый onescript и пакет messenger. Тестовые примеры реализуют отправку в телеграмм чат, соотвественно нужно заполнить параметры в `scriptcfg.json` для отправки. Установить пакет messenger можно через opm: `opm install messenger`
+
+Под нагрузкой не тестировалось. Внутри используется ограниченный пул горутин для обработки сообщений хранилища, который легко забить. Нужно добавить брокер или базу данных (подойдет даже sqllite) и разделить на сервисы.
