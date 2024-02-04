@@ -26,8 +26,7 @@ func (e *ScriptListener) Listen(ctx context.Context, cfg *config.Config) {
 			return
 		default:
 			rawevent := e.readNextPart()
-			e.doEvent(cfg, rawevent)
-			time.Sleep(time.Duration(20 * time.Second))
+			e.doEvents(cfg, rawevent)
 		}
 	}
 }
@@ -47,7 +46,7 @@ func (e *ScriptListener) readNextPart() []entity.OneCEvents {
 	}
 }
 
-func (e *ScriptListener) doEvent(cfg *config.Config, val []entity.OneCEvents) {
+func (e *ScriptListener) doEvents(cfg *config.Config, val []entity.OneCEvents) {
 
 	aggevent := make(map[string]entity.Aggevents, len(cfg.Scriptfile))
 	for i := 0; i < len(val); i++ {
@@ -55,22 +54,29 @@ func (e *ScriptListener) doEvent(cfg *config.Config, val []entity.OneCEvents) {
 	}
 
 	for k, v := range aggevent {
-		var err error
-		switch {
-		case strings.HasSuffix(cfg.Scriptfile[k], ".os"):
-			cmd := exec.Command("oscript", cfg.Scriptfile[k], getJSON(v))
-			err = cmd.Run()
-		case strings.HasSuffix(cfg.Scriptfile[k], ".sbsl"):
-			cmd := exec.Command("executor", "-s "+cfg.Scriptfile[k], getJSON(v))
-			err = cmd.Run()
-		default:
-			err = errors.New("Unknown script type!")
-		}
+		err := e.doEvent(cfg.Scriptfile[k], getJSON(v))
 		if err != nil {
 			panic(err)
 		}
 	}
 
+}
+
+func (e *ScriptListener) doEvent(script string, arg string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var err error
+	switch {
+	case strings.HasSuffix(script, ".os"):
+		cmd := exec.CommandContext(ctx, "oscript", script, arg)
+		err = cmd.Run()
+	case strings.HasSuffix(script, ".sbsl"):
+		cmd := exec.CommandContext(ctx, "executor", "-s "+script, arg)
+		err = cmd.Run()
+	default:
+		err = errors.New("Unknown script type!")
+	}
+	return err
 }
 
 func getJSON(ob entity.Aggevents) string {
